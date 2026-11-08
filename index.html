@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>KayKit Trials</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <style>
+    :root { --ink: #2f3650; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd3ff; user-select: none;
+      font: 800 17px/1.2 "Trebuchet MS", "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+    canvas { display: block; }
+    html, body { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .hide { display: none !important; }
+    img { pointer-events: none; }
+
+    /* ---- UI_Pack building blocks (all backgrounds are the SVGs, 9-sliced) ---- */
+    .btn { --n: url(UI_Pack/Blue/button_rectangle_depth_gradient.svg); --a: url(UI_Pack/Blue/button_rectangle_gradient.svg);
+      appearance: none; background: none; border-style: solid; border-width: 12px 14px 18px;
+      border-image: var(--n) 12 14 18 fill / 12px 14px 18px stretch;
+      padding: 6px 18px; min-width: 190px; font: inherit; font-size: 21px; color: #fff; text-shadow: 0 2px 0 #0003; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { border-image-source: var(--a); transform: translateY(3px); }
+    .btn.green  { --n: url(UI_Pack/Green/button_rectangle_depth_gradient.svg);  --a: url(UI_Pack/Green/button_rectangle_gradient.svg); }
+    .btn.red    { --n: url(UI_Pack/Red/button_rectangle_depth_gradient.svg);    --a: url(UI_Pack/Red/button_rectangle_gradient.svg); }
+    .btn.yellow { --n: url(UI_Pack/Yellow/button_rectangle_depth_gradient.svg); --a: url(UI_Pack/Yellow/button_rectangle_gradient.svg); color: #6a4a00; text-shadow: 0 1px 0 #fff7; }
+    .btn.grey   { --n: url(UI_Pack/Grey/button_rectangle_depth_gradient.svg);   --a: url(UI_Pack/Grey/button_rectangle_gradient.svg); color: var(--ink); text-shadow: none; }
+    .btn.big { font-size: 30px; min-width: 280px; padding: 10px 24px; }
+    .btn img { width: 22px; height: 22px; }
+
+    .panel { border-style: solid; border-width: 14px 16px 20px; border-image: url(UI_Pack/Grey/button_rectangle_depth_flat.svg) 12 14 18 fill / 14px 16px 20px stretch;
+      padding: 18px 30px; display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 440px; }
+    .panel h2 { margin: 0; font-size: 34px; }
+    .pill { border-style: solid; border-width: 10px 14px 14px; border-image: url(UI_Pack/Grey/button_rectangle_depth_flat.svg) 12 14 18 fill / 10px 14px 14px stretch;
+      padding: 2px 8px; font-size: 22px; min-width: 110px; text-align: center; }
+
+    .field { display: flex; align-items: center; gap: 12px; }
+    .input { border: 14px solid transparent; border-image: url(UI_Pack/Extra/input_rectangle.svg) 14 fill / 12px 14px stretch; background: none;
+      font: inherit; font-size: 20px; color: var(--ink); outline: none; width: 260px; padding: 0 2px; }
+    .input::placeholder { color: #9aa0b4; }
+
+    .slider { position: relative; width: 280px; height: 32px; touch-action: none; cursor: pointer; --v: .5; }
+    .slider .track, .slider .fill { position: absolute; left: 0; right: 0; top: 8px; height: 16px; border-style: solid; border-width: 8px 16px; }
+    .slider .track { border-image: url(UI_Pack/Grey/slide_horizontal_grey.svg) 8 16 fill / 8px 16px stretch; }
+    .slider .fill  { border-image: url(UI_Pack/Green/slide_horizontal_color.svg) 8 16 fill / 8px 16px stretch;
+      clip-path: inset(0 calc((100% - 28px) * (1 - var(--v)) + 14px) 0 0); }
+    .slider.red .fill { border-image-source: url(UI_Pack/Red/slide_horizontal_color.svg); }
+    .slider .knob { position: absolute; top: 2px; width: 28px; height: 28px; left: calc((100% - 28px) * var(--v));
+      background: url(UI_Pack/Green/button_round_depth_gradient.svg) center / contain no-repeat; }
+    .slider.ro { cursor: default; }
+    .slider.ro .knob { display: none; }
+    .slider.ro .fill { clip-path: inset(0 calc((1 - var(--v)) * 100%) 0 0); }
+
+    .check { width: 32px; height: 32px; cursor: pointer; background: url(UI_Pack/Grey/check_square_grey.svg) center / contain no-repeat; }
+    .check.on { background-image: url(UI_Pack/Green/check_square_color_checkmark.svg); }
+    .row { display: flex; align-items: center; gap: 14px; }
+    .key { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 38px; padding: 0 4px; font-size: 16px;
+      border-style: solid; border-width: 10px 10px 13px; border-image: url(UI_Pack/Grey/button_square_depth_flat.svg) 12 12 16 fill / 10px 10px 13px stretch; }
+
+    /* ---- screens ---- */
+    .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: rgba(15, 25, 45, .5); backdrop-filter: blur(3px); }
+    #menu { background: linear-gradient(#59b6ff 0%, #9be2ff 55%, #b6f0c2 100%); backdrop-filter: none; }
+    .title { margin: 0; font-size: 76px; color: #fff; letter-spacing: 3px; text-shadow: 0 5px 0 #2a6fb0, 0 10px 14px #0004; }
+    .sub { color: #fff; font-size: 20px; text-shadow: 0 2px 0 #2a6fb088; margin-top: -10px; }
+    .maps { display: flex; gap: 18px; }
+    .map { flex-direction: column; align-items: flex-start; gap: 4px; min-width: 300px; text-align: left; }
+    .map .mname { font-size: 26px; }
+    .map .mdesc { font-size: 15px; font-weight: 700; opacity: .85; }
+    .map .mbest { font-size: 15px; display: flex; align-items: center; gap: 6px; }
+    .map .mbest img { width: 18px; height: 18px; }
+    .stars { display: flex; gap: 10px; }
+    .stars img { width: 64px; height: 60px; }
+    .stat { font-size: 22px; }
+    .stat b { color: #2a8f4e; }
+
+    /* ---- HUD ---- */
+    #hud { position: fixed; inset: 0; pointer-events: none; }
+    #hud > * { position: absolute; }
+    #hud-stars { top: 14px; left: 16px; display: flex; align-items: center; gap: 8px; font-size: 32px; color: #fff; text-shadow: 0 3px 0 #0005; }
+    #hud-stars img { width: 44px; height: 41px; filter: drop-shadow(0 3px 0 #0004); }
+    #hud-hp { top: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; color: #fff; text-shadow: 0 2px 0 #0005; font-size: 22px; }
+    #hud-time { top: 14px; right: 16px; }
+    #hint { bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; color: #fff; text-shadow: 0 2px 0 #0006; font-size: 15px; }
+    #hint .key { color: var(--ink); text-shadow: none; }
+    /* ---- touch controls (mobile OS only, or ?touch=1 to test on desktop) ---- */
+    #touch { position: fixed; inset: 0; z-index: 5; pointer-events: none; touch-action: none; }
+    #look { position: absolute; inset: 0; pointer-events: auto; }
+    #joy { position: absolute; left: calc(28px + env(safe-area-inset-left)); bottom: calc(28px + env(safe-area-inset-bottom)); width: 150px; height: 150px; pointer-events: auto; touch-action: none; }
+    #joy-base { position: absolute; inset: 0; background: url(UI_Pack/Grey/button_round_depth_flat.svg) center / contain no-repeat; opacity: .8; }
+    #joy-knob { position: absolute; left: 43px; top: 43px; width: 64px; height: 64px; background: url(UI_Pack/Blue/button_round_depth_gradient.svg) center / contain no-repeat; }
+    #t-jump { position: absolute; right: calc(34px + env(safe-area-inset-right)); bottom: calc(40px + env(safe-area-inset-bottom)); width: 108px; height: 108px; border: 0; padding: 0; pointer-events: auto; touch-action: none;
+      background: url(UI_Pack/Green/button_round_depth_gradient.svg) center / contain no-repeat; display: flex; align-items: center; justify-content: center; }
+    #t-jump.down { background-image: url(UI_Pack/Green/button_round_gradient.svg); transform: translateY(3px); }
+    #t-jump img { width: 46px; height: 46px; }
+    #t-menu { position: absolute; left: calc(12px + env(safe-area-inset-left)); top: calc(12px + env(safe-area-inset-top)); min-width: 0; width: 64px; padding: 0; font-size: 28px; pointer-events: auto; touch-action: none; }
+    body.touch #hint { display: none; }
+    body.touch #hud-stars { left: calc(90px + env(safe-area-inset-left)); }
+    body.touch #hud-time { top: 18px; }
+    .screen { z-index: 20; }
+    #toast { position: fixed; top: 30%; left: 0; right: 0; text-align: center; font-size: 54px; color: #fff; text-shadow: 0 4px 0 #0005, 0 0 18px #0006; pointer-events: none; opacity: 0; transition: opacity .5s; }
+    #toast.on { opacity: 1; transition: none; }
+    /* ---- small screens (phones) ---- */
+    @media (max-width: 760px), (max-height: 520px) {
+      html, body { font-size: 14px; }
+      .title { font-size: 40px; }
+      .sub { font-size: 14px; margin-top: -6px; }
+      .screen { gap: 10px; }
+      .maps { flex-wrap: wrap; justify-content: center; gap: 8px; }
+      .map { min-width: 230px; }
+      .map .mname { font-size: 20px; }
+      .map .mdesc, .map .mbest { font-size: 12px; }
+      .btn { font-size: 17px; min-width: 120px; padding: 2px 12px; }
+      .btn.big { font-size: 22px; min-width: 200px; padding: 4px 16px; }
+      .panel { min-width: 0; width: min(92vw, 420px); padding: 8px 16px; gap: 8px; }
+      .panel h2 { font-size: 24px; }
+      .stars img { width: 40px; height: 38px; }
+      .stat { font-size: 16px; }
+      .input { width: 200px; font-size: 16px; }
+      .slider { width: 190px; }
+      #hp { width: 170px !important; }
+      #hud-stars { font-size: 22px; }
+      #hud-stars img { width: 30px; height: 28px; }
+      .pill { font-size: 16px; min-width: 80px; }
+      #toast { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== main menu ===== -->
+  <div id="menu" class="screen hide">
+    <h1 class="title">KayKit Trials</h1>
+    <div class="sub">pick a course and run it</div>
+    <label class="field"><span style="color:#fff;text-shadow:0 2px 0 #0004">Name</span>
+      <input id="name" class="input" maxlength="14" placeholder="Adventurer" autocomplete="off"></label>
+    <div class="maps">
+      <button class="btn grey map" data-map="sky"><div class="mname">Sky Course</div><div class="mdesc">Floating blocks · cannons · boulder gate</div><div class="mbest"></div></button>
+      <button class="btn grey map" data-map="land"><div class="mname">Land of Traps</div><div class="mdesc">Big ground map · 9 trap zones · stairs &amp; ramps</div><div class="mbest"></div></button>
+    </div>
+    <button id="go" class="btn green big"><img src="UI_Pack/Extra/icon_play_light.svg"> PLAY</button>
+  </div>
+
+  <!-- ===== in-game HUD ===== -->
+  <div id="hud" class="hide">
+    <div id="hud-stars"><img src="UI_Pack/Yellow/star.svg"><span id="stars">0/0</span></div>
+    <div id="hud-hp" class="hide"><span>HP</span><div id="hp" class="slider red ro" style="--v:1;width:300px"><div class="track"></div><div class="fill"></div></div></div>
+    <div id="hud-time" class="pill">0:00.0</div>
+    <div id="hint">
+      <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move
+      <span class="key" style="min-width:70px">Space</span> jump (x2)
+      <span class="key">F</span> fly-cam
+      <span class="key">R</span> respawn
+      <span class="key">1-9</span> zones
+      <span class="key">Esc</span> menu
+    </div>
+  </div>
+  <div id="touch" class="hide">
+    <div id="look"></div>
+    <button id="t-menu" class="btn grey">&#9776;</button>
+    <div id="joy"><div id="joy-base"></div><div id="joy-knob"></div></div>
+    <button id="t-jump"><img src="UI_Pack/Extra/icon_arrow_up_light.svg"></button>
+  </div>
+  <div id="toast"></div>
+
+  <!-- ===== pause / ready ===== -->
+  <div id="pause" class="screen hide">
+    <div class="panel">
+      <h2 id="pause-title">Paused</h2>
+      <div class="row"><span style="width:130px">Mouse speed</span><div id="sens" class="slider"><div class="track"></div><div class="fill"></div><div class="knob"></div></div></div>
+      <div class="row"><span style="width:130px">Invert Y</span><div id="invert" class="check"></div></div>
+      <div class="row">
+        <button id="resume" class="btn green"><img src="UI_Pack/Extra/icon_play_light.svg"><span id="resume-label">RESUME</span></button>
+        <button id="restart" class="btn blue"><img src="UI_Pack/Extra/icon_repeat_light.svg">RESTART</button>
+      </div>
+      <button class="btn red tomenu">MENU</button>
+    </div>
+  </div>
+
+  <!-- ===== course complete ===== -->
+  <div id="win" class="screen hide">
+    <div class="panel">
+      <h2 id="win-title">Course Complete!</h2>
+      <div id="win-stars" class="stars"></div>
+      <div class="stat" id="win-line1"></div>
+      <div class="stat" id="win-line2"></div>
+      <div class="row">
+        <button id="again" class="btn blue"><img src="UI_Pack/Extra/icon_repeat_light.svg">PLAY AGAIN</button>
+        <button class="btn red tomenu">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+node_modules/
+dist/
+
+# KayKit packs: only the glTF + textures are used by the game, skip the other formats and promo images
+KayKit_*/**/fbx/
+KayKit_*/**/fbx(unity)/
+KayKit_*/**/obj/
+KayKit_*/Samples/
+KayKit_*/contents.png
+KayKit_*/*.url
+
+# misc
+.env
+.env.*
+*.log
+.DS_Store
+.cache/
+*.tsbuildinfo
