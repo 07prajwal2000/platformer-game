@@ -127,6 +127,15 @@
   </style>
 </head>
 <body>
+  <!-- ===== loading (visible from first paint; ui.js hides it on the menu page) ===== -->
+  <div id="loading" class="screen" style="background:linear-gradient(#59b6ff,#9be2ff 55%,#b6f0c2);backdrop-filter:none">
+    <h1 class="title">KayKit Trials</h1>
+    <div class="panel" style="min-width:0">
+      <div class="stat" id="load-text">Loading…</div>
+      <div id="load-bar" class="slider ro" style="--v:0;width:320px"><div class="track"></div><div class="fill"></div></div>
+    </div>
+  </div>
+
   <!-- ===== main menu ===== -->
   <div id="menu" class="screen hide">
     <h1 class="title">KayKit Trials</h1>

@@ -4,10 +4,21 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import RAPIER from '@dimforge/rapier3d-compat';
 import { ui, touch, settings, sensMul, MAP_ID } from './ui.js';
 import { buildLand } from './land.js';
+import PRELOAD from './preload.json'; // every model file each map uses, so they download in parallel (regenerate: open the map with &dump=1, copy the console line)
+
+const MAP = MAP_ID === 'land' ? 'land' : 'sky';
+
+// ---------- model loading: request everything up front; LoadingManager progress drives the loading screen ----------
+const manager = new THREE.LoadingManager();
+let prog = 0;
+manager.onProgress = (url, loaded, total) => ((prog = Math.max(prog, loaded / total)), ui.loading(prog, url.split('/').pop()));
+const loader = new GLTFLoader(manager);
+const cache = new Map();
+const load = (url) => cache.get(url) ?? (cache.set(url, loader.loadAsync(url)), cache.get(url));
+(PRELOAD[MAP] ?? []).forEach(load);
 
 await RAPIER.init();
 
-const MAP = MAP_ID === 'land' ? 'land' : 'sky';
 const PLAT = 'KayKit_Platformer/Assets/gltf/';
 const CHAR = 'KayKit_Adventurers_Characters/';
 const GRAV = -25;
@@ -65,10 +76,7 @@ addEventListener('resize', () => {
   cam.updateProjectionMatrix();
 });
 
-// ---------- model loading ----------
-const loader = new GLTFLoader();
-const cache = new Map();
-const load = (url) => cache.get(url) ?? (cache.set(url, loader.loadAsync(url)), cache.get(url));
+// ---------- model helpers ----------
 const castAll = (o) => (o.traverse((m) => m.isMesh && (m.castShadow = m.receiveShadow = true)), o);
 // color = null -> neutral/ folder (no suffix); platforms originate at bottom-center, 1 unit = 1 block
 async function get(name, color) {
@@ -673,14 +681,17 @@ async function buildSky() {
 // =====================================================================================
 const ctx = { THREE, RAPIER, scene, world, L, get, prop, plat, box, mover, shoot, flash, cannon, ballistic, pickup, spring, rnd, clamp, hurt, pPos, pVel, CENTER, getTime: () => time };
 
+ui.loading(prog, 'building level…');
 if (MAP === 'land') {
   L.hp = true;
   await buildLand(ctx);
 } else await buildSky();
 
+if (location.search.includes('dump=1')) console.log('PRELOAD ' + JSON.stringify({ [MAP]: [...cache.keys()] }));
 spawn = lastSafe = L.spawn;
 teleport(spawn);
 camT.set(spawn.x, spawn.y + 1, spawn.z);
+ui.loadingDone();
 ui.showHud(L.hp);
 ui.stars(0, total);
 ui.hp(1);

@@ -32,6 +32,7 @@ $('#restart').onclick = $('#again').onclick = () => location.reload();
 
 // ---- main menu (only when no ?map=) ----
 if (!MAP_ID) {
+  show($('#loading'), false);
   let sel = 'sky';
   const menu = $('#menu');
   show(menu);
@@ -116,6 +117,11 @@ export const ui = {
     show($('#touch'), wantTouch);
     document.body.classList.toggle('touch', wantTouch);
   },
+  loading(f, name = '') {
+    $('#load-bar').style.setProperty('--v', f);
+    $('#load-text').textContent = `${Math.round(f * 100)}%  ${name}`;
+  },
+  loadingDone: () => show($('#loading'), false),
   stars: (got, total) => ($('#stars').textContent = `${got}/${total}`),
   time: (t) => ($('#hud-time').textContent = fmt(t)),
   hp: (f) => $('#hp').style.setProperty('--v', Math.max(0, f)),
