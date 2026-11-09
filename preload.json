@@ -58,7 +58,6 @@
     "KayKit_Platformer/Assets/gltf/yellow/star_yellow.gltf",
     "KayKit_Platformer/Assets/gltf/green/arch_wide_green.gltf",
     "KayKit_Platformer/Assets/gltf/yellow/arch_wide_yellow.gltf",
-    "KayKit_Platformer/Assets/gltf/yellow/platform_2x2x1_yellow.gltf",
     "KayKit_Platformer/Assets/gltf/red/platform_4x2x1_red.gltf",
     "KayKit_Platformer/Assets/gltf/blue/spring_pad_blue.gltf",
     "KayKit_Platformer/Assets/gltf/green/platform_6x6x1_green.gltf",
@@ -74,6 +73,7 @@
     "KayKit_Platformer/Assets/gltf/neutral/pillar_2x2x4.gltf",
     "KayKit_Platformer/Assets/gltf/yellow/platform_arrow_4x4x1_yellow.gltf",
     "KayKit_Platformer/Assets/gltf/neutral/signage_finish_wide.gltf",
-    "KayKit_Platformer/Assets/gltf/green/flag_A_green.gltf"
+    "KayKit_Platformer/Assets/gltf/green/flag_A_green.gltf",
+    "KayKit_Platformer/Assets/gltf/red/platform_4x4x1_red.gltf"
   ]
 }

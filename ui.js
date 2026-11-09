@@ -108,6 +108,28 @@ const wantTouch =
   (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) || // iPadOS reports as a Mac
   /[?&]touch=1/.test(location.search);
 
+// fullscreen toggle (touch devices): standard API, webkit fallback (iPadOS); hidden where unsupported (iPhone Safari)
+{
+  const el = document.documentElement, fs = $('#fs');
+  const req = el.requestFullscreen || el.webkitRequestFullscreen, exit = document.exitFullscreen || document.webkitExitFullscreen;
+  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (wantTouch && req) {
+    show(fs);
+    const paint = () => (fs.textContent = isFs() ? 'EXIT FULLSCREEN' : 'FULLSCREEN');
+    fs.onclick = async () => {
+      try {
+        if (isFs()) await exit.call(document);
+        else {
+          await req.call(el);
+          screen.orientation?.lock?.('landscape').catch(() => {}); // best effort; only works in fullscreen on Android
+        }
+      } catch {}
+    };
+    for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, paint);
+    paint();
+  }
+}
+
 let toastT = 0;
 export const ui = {
   onResume: null,

@@ -393,12 +393,13 @@ function updatePlayer(dt) {
   pPos.set(t.x, t.y, t.z);
 
   // ground under feet: moving-platform carry, crumbling tiles, safe-ground bookkeeping
-  let cx = 0, cy = 0, cz = 0, onStatic = false;
+  let cx = 0, cz = 0, mx = 0, my = 0, mz = 0, onStatic = false; // c* = belt push (goes through collision), m* = moving-platform carry (applied exactly, after collision)
   const hit = world.castRay(new RAPIER.Ray(t, { x: 0, y: -1, z: 0 }), CENTER + 0.3, true, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC, undefined, player.col);
   const gh = hit?.collider.parent()?.handle;
   const m = movers.get(gh), cr = L.crumbleByHandle.get(gh);
+  const under = hit && hit.timeOfImpact < CENTER + 0.15; // platform right below the feet, even a frame before `grounded` flips
+  if (m && (grounded || under)) (mx = m.dx), (my = m.dy), (mz = m.dz);
   if (grounded) {
-    if (m) (cx = m.dx), (cy = m.dy), (cz = m.dz);
     if (cr) cr.touched = true;
     onStatic = !m && !cr;
   }
@@ -446,13 +447,13 @@ function updatePlayer(dt) {
   vy = Math.max(vy + GRAV * dt, -40);
 
   // character controller move
-  const want = { x: pVel.x * dt + cx, y: vy * dt + cy, z: pVel.z * dt + cz };
+  const want = { x: pVel.x * dt + cx, y: vy * dt, z: pVel.z * dt + cz };
   kcc.computeColliderMovement(player.col, want);
   const mv = kcc.computedMovement();
   grounded = kcc.computedGrounded();
   if (want.y > 0 && mv.y < want.y - 1e-4) vy = Math.min(vy, 0); // bonked ceiling
   if (grounded && vy < 0) vy = 0;
-  player.body.setNextKinematicTranslation({ x: t.x + mv.x, y: t.y + mv.y, z: t.z + mv.z });
+  player.body.setNextKinematicTranslation({ x: t.x + mv.x + mx, y: t.y + mv.y + my, z: t.z + mv.z + mz });
 
   // balls hitting the player (pre-step so we still have the incoming velocity)
   for (const d of dyn) {

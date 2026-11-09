@@ -161,53 +161,45 @@ export async function buildLand(c) {
   // ================================================================ 3. LAVA RIVER: crumbling tiles / ferry platforms / spring hops
   const lavaHole = { x0: -20, x1: 20, z0: -60, z1: -82 };
   ground(Z.lava, [lavaHole]);
-  // left lane: tiles that shake and drop once stepped on, then come back
+  // left lane: tiles that shake, then drop (scripted, no physics body swap so the rider separates cleanly), then come back
   async function crumble(x, z) {
-    const m = await prop('platform_2x2x1', 'yellow', x, -1, z, { kinematic: true });
-    const cr = { touched: false, st: 0, t: 0 };
+    const m = await prop('platform_4x4x1', 'yellow', x, -1, z, { kinematic: true }); // top at y=0
+    const cr = { touched: false, st: 0, t: 0, fall: 0 };
     L.crumbleByHandle.set(m.body.handle, cr);
+    const place = (y, dx = 0) => (m.body.setNextKinematicTranslation({ x: x + dx, y, z }), m.obj.position.set(x + dx, y, z));
     tick((dt) => {
       const touched = cr.touched;
       cr.touched = false;
-      if (cr.st === 0 && touched) (cr.st = 1), (cr.t = 0.55);
+      if (cr.st === 0 && touched) (cr.st = 1), (cr.t = 0.9); // generous warning: shake for 0.9s
       else if (cr.st === 1) {
-        m.obj.position.x = x + Math.sin(cr.t * 70) * 0.07;
-        if ((cr.t -= dt) <= 0) (cr.st = 2), (cr.t = 2.2), m.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+        const k = 1 - cr.t / 0.9;
+        place(-1, Math.sin(cr.t * 60) * 0.03 * (1 + 3 * k));
+        if ((cr.t -= dt) <= 0) (cr.st = 2), (cr.fall = 0);
       } else if (cr.st === 2) {
-        const p = m.body.translation(), q = m.body.rotation();
-        m.obj.position.set(p.x, p.y, p.z);
-        m.obj.quaternion.set(q.x, q.y, q.z, q.w);
-        if ((cr.t -= dt) <= 0) {
-          m.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
-          m.body.setTranslation({ x, y: -1, z }, true);
-          m.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-          m.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-          m.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-          m.body.setEnabled(false);
-          m.obj.visible = false;
-          cr.st = 3;
-          cr.t = 1.8;
-        }
+        cr.fall += dt;
+        const y = -1 - 0.5 * 32 * cr.fall * cr.fall; // accelerates faster than the player (g=25) so they separate
+        place(y);
+        if (y < -3.2) (m.body.setEnabled(false), (m.obj.visible = false), (cr.st = 3), (cr.t = 2.2));
       } else if (cr.st === 3 && (cr.t -= dt) <= 0) {
+        m.body.setTranslation({ x, y: -1, z }, true);
         m.body.setEnabled(true);
-        m.obj.position.set(x, -1, z);
-        m.obj.quaternion.set(0, 0, 0, 1);
         m.obj.visible = true;
+        place(-1);
         cr.st = 0;
       }
     });
   }
-  for (const z of [-62.5, -66, -69.5, -73, -76.5, -80]) await crumble(-14, z);
-  // middle lane: two ferries sliding along z (opposite phases)
+  for (const z of [-62.4, -68, -73.6, -79.2]) await crumble(-14, z);
+  // middle lane: two 4x4 ferries sliding along z (opposite phases)
   for (const [x, ph] of [[-3, 0], [3, Math.PI]]) {
-    const f = await prop('platform_4x2x1', 'red', x, -1, -71, { kinematic: true });
-    mover(f.body, f.obj, (t) => ({ x, y: -1, z: -71 + 9.5 * Math.sin(t * 0.7 + ph) }));
+    const f = await prop('platform_4x4x1', 'red', x, -1, -71, { kinematic: true });
+    mover(f.body, f.obj, (t) => ({ x, y: -1, z: -71 + 8.8 * Math.sin(t * 0.55 + ph) }));
   }
   // right lane: spring-hop over an island
   await spring(14, 0, -58.2, 19);
   await plat('platform_6x6x1', 'green', 14, 0, -71);
   await spring(14, 0, -73.2, 19);
-  await stars([[-14, 1.4, -69.5], [0, 2.2, -71], [14, 1.6, -69], [-14, 1.4, -80]]);
+  await stars([[-14, 1.4, -68], [0, 2.2, -71], [14, 1.6, -69], [-14, 1.4, -79.2]]);
   await walls(Z.lava, Z.cannons);
 
   // ================================================================ 4. CANNON CORRIDOR: crossfire + cover
